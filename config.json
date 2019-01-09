@@ -1,7 +1,7 @@
 {
-  "cc_tenant_id": "72f988bf-86f1-41af-91ab-2d7cd011db47",
-  "cc_subscription_id": "b297e6df-ac0e-4f46-87aa-7cdafe177f4b",
+  "cc_tenant_id": "",
+  "cc_subscription_id": "",
   "cc_resource_group": "zhzhaopitest",
-  "cc_workspace_id": "60373d82-0640-4926-8e75-4e76ad7afe49",
+  "cc_workspace_id": "",
   "cc_workspace_name": "zhzhaoasi"
 }
