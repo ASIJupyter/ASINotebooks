@@ -1,7 +1,7 @@
 {
-  "cc_tenant_id": "1",
-  "cc_subscription_id": "1",
-  "cc_resource_group": "1",
-  "cc_workspace_id": "1",
-  "cc_workspace_name": "1"
+  "tenant_id": "{{cookiecutter.tenant_id}}",
+  "subscription_id": "{{cookiecutter.subscription_id}}",
+  "resource_group": "{{cookiecutter.resource_group}}",
+  "workspace_id": "{{cookiecutter.workspace_id}}",
+  "workspace_name": "{{cookiecutter.workspace_name}}",
 }
