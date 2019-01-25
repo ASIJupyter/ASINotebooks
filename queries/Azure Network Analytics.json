@@ -1,0 +1,8 @@
+{
+  "id": "57abe031-962d-482e-8e1e-a556ed99d5d3",
+  "name": "Azure Network Analytics",
+  "description": "Azure Network Analytics for demo",
+  "techniques": [ "Execution" ],
+  "query": "let reg = '((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?))';\n    AzureNetworkAnalytics_CL\n    | where TimeGenerated > ago(60m)\n    | where DestPort_d == 3389\n    | where FlowType_s == 'ExternalPublic'\n    | extend ipArray = extract_all(reg, dynamic( [ 1 ]), PublicIPs_s)\n    | project TimeGenerated, ipArray "
+}
+
