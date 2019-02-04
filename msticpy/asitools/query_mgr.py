@@ -12,10 +12,10 @@ from . query_schema import DataSchema
 from . query_builtin_queries import query_definitions
 from . query_defns import KqlQuery, QueryParamProvider, DataFamily, DataEnvironment
 from . utility import export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
-__all__ = ['KqlQuery']
 
 # module constants
 _DATA_FAMILY_NAME = 'data_family'

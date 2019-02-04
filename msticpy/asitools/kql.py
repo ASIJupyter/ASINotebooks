@@ -18,8 +18,9 @@ from . query_mgr import (replace_prov_query_params, list_queries,
                          clean_kql_query, query_help, print_kql)
 # pylint: enable=locally-disabled, W0611
 from . utility import export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 # pylint: disable=locally-disabled, C0103

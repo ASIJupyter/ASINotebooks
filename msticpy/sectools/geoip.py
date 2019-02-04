@@ -5,7 +5,7 @@
 # license information.
 # --------------------------------------------------------------------------
 """geoip module using ipstack."""
-import gzip
+# import gzip
 from json import JSONDecodeError
 import os
 from abc import ABC, abstractmethod
@@ -18,7 +18,7 @@ from geolite2 import geolite2
 import pandas as pd
 import requests
 
-from .. asitools.entityschema import Geolocation, IpAddress
+from .. asitools.entityschema import GeoLocation, IpAddress
 from .. asitools.utility import export
 
 
@@ -28,7 +28,19 @@ class GeoIpLookup(ABC):
     @abstractmethod
     def lookup_ip(self, ip_address: str = None, ip_addr_list: Iterable = None,
                   ip_entity: IpAddress = None):
-        pass
+        """
+        Lookup IP location.
+
+        Keyword Arguments:
+            ip_address {str} -- a single address to look up (default: {None})
+            ip_addr_list {Iterable} -- a collection of addresses to lookup (default: {None})
+            ip_entity {IpAddress} -- an IpAddress entity
+
+        Returns:
+            tuple(list{dict}, list{entity}) -- returns raw geolocation results and
+                same results as IP/Geolocation entities
+
+        """
 
     def df_lookup_ip(self, data: pd.DataFrame, column: str):
         """
@@ -60,10 +72,10 @@ class IPStackLookup(GeoIpLookup):
     """
 
     _IPSTACK_API = 'http://api.ipstack.com/{iplist}?access_key={access_key}'
-    
+
     def __init__(self, api_key):
         """
-        Creates a new instance of IPStackLookup.
+        Create a new instance of IPStackLookup.
 
         Arguments:
             api_key {str} -- API Key from IPStack - see https://ipstack.com
@@ -73,7 +85,7 @@ class IPStackLookup(GeoIpLookup):
     def lookup_ip(self, ip_address: str = None, ip_addr_list: Iterable = None,
                   ip_entity: IpAddress = None):
         """
-        Lookup IP location from IPStack web service
+        Lookup IP location from IPStack web service.
 
         Keyword Arguments:
             ip_address {str} -- a single address to look up (default: {None})
@@ -121,7 +133,7 @@ class IPStackLookup(GeoIpLookup):
         if not ip_entity:
             ip_entity = IpAddress()
             ip_entity.Address = ip_loc['ip']
-        geo_entity = Geolocation()
+        geo_entity = GeoLocation()
         geo_entity.CountryCode = ip_loc['country_code']
 
         geo_entity.CountryName = ip_loc['country_name']
@@ -171,11 +183,6 @@ class GeoLiteLookup(GeoIpLookup):
 
     def __init__(self):
         """Return new instance of GeoLiteLookup class."""
-        if not get_ipython():
-            print(self._MM_LICENSE_TXT)
-        else:
-            display(HTML(self._MM_LICENSE_HTML))
-
         self._reader = geolite2.reader()
         last_mod_time = datetime.fromtimestamp(os.path.getmtime(geolite2.filename))
         db_age = datetime.utcnow - last_mod_time
@@ -186,7 +193,7 @@ class GeoLiteLookup(GeoIpLookup):
     def lookup_ip(self, ip_address: str = None, ip_addr_list: Iterable = None,
                   ip_entity: IpAddress = None):
         """
-        Lookup IP location from IPStack web service
+        Lookup IP location from IPStack web service.
 
         Keyword Arguments:
             ip_address {str} -- a single address to look up (default: {None})
@@ -231,7 +238,7 @@ class GeoLiteLookup(GeoIpLookup):
         if not ip_entity:
             ip_entity = IpAddress()
             ip_entity.Address = ip_address
-        geo_entity = Geolocation()
+        geo_entity = GeoLocation()
         geo_entity.CountryCode = ip_loc['Country Code']
         geo_entity.CountryName = ip_loc['Country']
         geo_entity.State = ip_loc['Region']

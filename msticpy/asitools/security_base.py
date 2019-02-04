@@ -14,9 +14,10 @@ import pandas as pd
 from .entityschema import Process
 from .query_defns import QueryParamProvider, DataFamily, DataEnvironment
 from .utility import is_not_empty, escape_windows_path
+from . utility import export
+from .. _version import VERSION
 
-__all__ = ['SecurityBase']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 _ID_PROPERTIES = ['AzSubscriptionId', 'AzResourceId', 'WorkspaceId', 'AgentId',
@@ -25,6 +26,7 @@ _ID_PROPERTIES = ['AzSubscriptionId', 'AzResourceId', 'WorkspaceId', 'AgentId',
                   'ProviderAlertId', 'SystemAlertId', 'ResourceId']
 
 
+@export
 class SecurityBase(QueryParamProvider):
     """
     Security Base Class for alerts and events.

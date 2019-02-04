@@ -5,18 +5,20 @@
 # --------------------------------------------------------------------------
 """Module for SecurityAlert class."""
 import json
+from json import JSONDecodeError
 
 import pandas as pd
 
+from .._version import VERSION
+from .entityschema import Entity
+from .security_base import SecurityBase
+from .utility import export
 
-from . security_base import SecurityBase
-from . entityschema import Entity
-
-__all__ = ['SecurityAlert']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
+@export
 class SecurityAlert(SecurityBase):
     """
     Security Alert Class.
@@ -32,28 +34,16 @@ class SecurityAlert(SecurityBase):
         # add entities to dictionary to remove dups
         if 'Entities' in src_row:
             self._src_entities = dict()
-
-            input_entities = []
-            if isinstance(src_row.Entities, str):
+            self._extract_entities(src_row)
+            
+        if 'ExtendedProperties' in src_row:
+            if isinstance(src_row.ExtendedProperties, dict):
+                self.extended_properties = src_row.ExtendedProperties
+            elif isinstance(src_row.ExtendedProperties, str):
                 try:
-                    input_entities = json.loads(src_row['Entities'])
-                except json.JSONDecodeError:
+                    self.extended_properties = json.loads(src_row.ExtendedProperties)
+                except JSONDecodeError:
                     pass
-            elif isinstance(src_row.Entities, list):
-                input_entities = src_row.Entities
-
-            for ent in input_entities:
-                try:
-                    entity = Entity.instantiate_entity(ent)
-                except TypeError:
-                    # if we didn't instantiate a known entity
-                    # just add it as it is
-                    entity = ent
-                if '$id' in ent:
-                    self._src_entities[ent['$id']] = entity
-
-            self._resolve_entity_refs()
-
         self._find_os_family()
 
     @property
@@ -93,11 +83,11 @@ class SecurityAlert(SecurityBase):
         """Print the alert contents to stdout."""
         alert_props = str(super().__str__())
 
-        if 'ExtendedProperties' in self:
+        if self.extended_properties:
             str_rep = [f'ExtProp: {prop}: {val}' for prop, val in
-                       self['ExtendedProperties'].items()]
+                       self.extended_properties.items()]
             alert_props = alert_props + '\n' + '\n'.join(str_rep)
-
+        
         return alert_props
 
     # Private methods
@@ -148,3 +138,25 @@ class SecurityAlert(SecurityBase):
                         self.os_family = 'Linux'
                         self.path_separator = '/'
                         break
+
+    def _extract_entities(self, src_row):
+        input_entities = []
+        if isinstance(src_row.Entities, str):
+            try:
+                input_entities = json.loads(src_row['Entities'])
+            except json.JSONDecodeError:
+                pass
+        elif isinstance(src_row.Entities, list):
+            input_entities = src_row.Entities
+
+        for ent in input_entities:
+            try:
+                entity = Entity.instantiate_entity(ent)
+            except TypeError:
+                # if we didn't instantiate a known entity
+                # just add it as it is
+                entity = ent
+            if '$id' in ent:
+                self._src_entities[ent['$id']] = entity
+
+        self._resolve_entity_refs()

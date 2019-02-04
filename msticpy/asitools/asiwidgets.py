@@ -21,10 +21,10 @@ from ipywidgets import Layout, interactive
 from . import kql as qry
 from .query_defns import QueryParamProvider
 from .utility import export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
-__all__ = ['QueryTime', 'Lookback', 'AlertSelector', 'SelectString']
 
 
 class TimeUnit(Enum):
@@ -573,7 +573,7 @@ class GetEnvironmentKey(object):
     # pylint: disable=locally-disabled, W0613
     def _on_save_button_clicked(self, button):
         if self._w_check_save.value:
-            os.environ[self._name] = self._w_text.value.trim()
+            os.environ[self._name] = self._w_text.value.strip()
 
 
 @export
@@ -587,6 +587,7 @@ class SelectString(object):
     """
 
     def __init__(self, description: str = None, item_list: list({str})=None,
+                 action: Callable[..., None] = None,
                  item_dict: dict({str: str})=None, auto_display: bool = False):
         """
         Initialize and display list picker.
@@ -594,6 +595,7 @@ class SelectString(object):
             :param description=None: List label
             :param item_list=None: Item List
             :param item_dict=None: Item dictionary { display_string: value }
+            :param action=None: function to call when item selected
         """
         if item_list:
             self._item_list = item_list
@@ -607,6 +609,7 @@ class SelectString(object):
             raise ValueError(
                 "One of item_list or item_dict must be supplied.")
 
+        self.item_action = action
         self._wgt_select = widgets.Select(options=self._item_list,
                                           description=description,
                                           layout=Layout(
@@ -620,6 +623,9 @@ class SelectString(object):
             self.value = self._item_dict.get(value, None)
         else:
             self.value = value
+
+        if self.item_action is not None:
+               self.item_action(self._select_item)
 
     def display(self):
         """Display the interactive widget."""

@@ -8,12 +8,14 @@ import pandas as pd
 
 from . entityschema import Host, Process, Account, IpAddress
 from . security_base import SecurityBase
+from . utility import export
+from .. _version import VERSION
 
-__all__ = ['SecurityEvent']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
+@export
 class SecurityEvent(SecurityBase):
     """SecurityEvent class."""
 

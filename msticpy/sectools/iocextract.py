@@ -10,9 +10,10 @@ from collections import namedtuple, defaultdict
 from urllib.parse import unquote
 
 import pandas as pd
+from .. asitools.utility import export
+from .. _version import VERSION
 
-__all__ = ['IoCExtract']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
@@ -23,6 +24,7 @@ def _compile_regex(regex):
 IoCPattern = namedtuple('IoCPattern', ['ioc_type', 'comp_regex', 'priority'])
 
 
+@export
 class IoCExtract(object):
     """
     IoC Extractor - looks for common IoC patterns in input strings.

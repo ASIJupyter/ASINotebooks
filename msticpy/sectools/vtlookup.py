@@ -19,8 +19,9 @@ from urllib3.util import parse_url
 
 from . iocextract import IoCExtract
 from .. asitools.utility import export, pd_version_23
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 # VirusTotal parameter collection
@@ -105,7 +106,7 @@ class VTLookup:
         """Return list of VirusTotal supported IoC type names."""
         return list(self._VT_API_TYPES.keys())
 
-# noqa: D102
+# flake8: noqa: D102
     @property
     def ioc_vt_type_mapping(self) -> dict({str: str}):
         """Return mapping between internal and VirusTotal IoC type names."""
@@ -367,6 +368,7 @@ class VTLookup:
             else:
                 new_results = pd.concat(
                     objs=[self.results, df_dict_vtresults], ignore_index=True, axis=0)
+
             self.results = new_results
         # pylint enable=locally-disabled, C0200
 
@@ -528,6 +530,7 @@ class VTLookup:
         new_row['Status'] = status
         new_row['SourceIndex'] = source_idx
         new_results = self.results.append(new_row.to_dict(), ignore_index=True)
+
         self.results = new_results
 
     def _vt_submit_request(self, submission_string, vt_param):

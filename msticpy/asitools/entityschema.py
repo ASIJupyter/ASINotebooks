@@ -9,23 +9,19 @@ entityschema module.
 Module for V3 Entities class
 """
 import ipaddress
+import json
 import pprint
 from abc import ABC, abstractmethod
 from enum import Enum
 
 from . utility import export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
-__all__ = ['Account', 'Alert', 'AzureResource', 'CloudApplication',
-           'DnsResolve', 'ElevationToken', 'Entity', 'Enum', 'File',
-           'GeoLocation', 'Host', 'HostLogonSession', 'IpAddress',
-           'Malware', 'NetworkConnection', 'OSFamily', 'Process',
-           'RegistryHive', 'RegistryKey', 'RegistryValue']
-
-# pylint: disable=locally-disabled, C0103
 
 
+# pylint: disable=invalid-name
 @export
 class Entity(ABC):
     """
@@ -119,6 +115,10 @@ class Entity(ABC):
     def __str__(self) -> str:
         """Return string representation of entity."""
         return pprint.pformat(self._to_dict(self), indent=2, width=100)
+
+    def __repr__(self) -> dict:
+        """Return repr of entity."""
+        return json.dumps(self._to_dict(self))
 
     def _to_dict(self, entity) -> dict:
         """Return as simple nested dictionary."""
