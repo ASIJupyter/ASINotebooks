@@ -9,6 +9,7 @@ Interactive Azure Notebooks provides security insights and actions to investigat
 ## Using the Notebooks locally or in other environments
 Azure Security Insights will provision notebooks and supporting modules for you in Azure Notebooks. You can also download the notebooks and modules and use them locally in a supported Python environment (Anaconda is recommended) or another notebook hosting environment such as Azure Databricks or a JupyterHub environment that supports Python 3.6 or later.
 
+<hr>
 
 #### Interative in Azure (requires logging in):
 
