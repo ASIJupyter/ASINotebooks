@@ -10,9 +10,10 @@ from collections import namedtuple, defaultdict
 from urllib.parse import unquote
 
 import pandas as pd
+from .. asitools.utility import export
+from .. _version import VERSION
 
-__all__ = ['IoCExtract']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
@@ -23,6 +24,7 @@ def _compile_regex(regex):
 IoCPattern = namedtuple('IoCPattern', ['ioc_type', 'comp_regex', 'priority'])
 
 
+@export
 class IoCExtract(object):
     """
     IoC Extractor - looks for common IoC patterns in input strings.
@@ -138,15 +140,22 @@ class IoCExtract(object):
         return self._content_regex
 
     def extract(self, src: str = None, data: pd.DataFrame = None,
-                columns: list = None, os_family='Windows'):
+                columns: list = None, os_family='Windows',
+                ioc_types: list = None):
         """
         Extract IoCs from either a string or pandas DataFrame.
 
-            :param data: input DataFrame from which to read source strings
-            :param columns: The list of columns to use as source strings,
-                if the data parameter is used.
-            :param src: source string in which to look for IoC patterns
-            :param os_family: 'Linux' or 'Windows'
+        Keyword Arguments:
+            src {str} --  source string in which to look for IoC patterns
+                (default: {None})
+            data {pd.DataFrame} -- input DataFrame from which to read source strings
+                 (default: {None})
+            columns {list} -- The list of columns to use as source strings,
+                if the data parameter is used.  (default: {None})
+            os_family {str} -- 'Linux' or 'Windows' (default: {'Windows'})
+            ioc_types {list({str})} -- Restrict matching to just specified 
+                types (default: {None})
+
 
         Returns:
             dict of found observables (if input is a string) or
@@ -186,7 +195,7 @@ class IoCExtract(object):
         result_frame = pd.DataFrame(columns=result_columns)
         for idx, datarow in data.iterrows():
             for col in columns:
-                ioc_results = self._scan_for_iocs(datarow[col], os_family)
+                ioc_results = self._scan_for_iocs(datarow[col], os_family, ioc_types)
                 for result_type, result_set in ioc_results.items():
                     if result_set:
                         for observable in result_set:
@@ -216,12 +225,15 @@ class IoCExtract(object):
         return rgx.comp_regex.fullmatch(input_str) is not None
 
     # Private methods
-    def _scan_for_iocs(self, src: str, os_family: str) -> dict:
+    def _scan_for_iocs(self, src: str, os_family: str, ioc_types: list = None) -> dict:
         """Return IoCs found in the string."""
         ioc_results = defaultdict(set)
         iocs_found = {}
 
         for (ioc_type, rgx_def) in self._content_regex.items():
+            if ioc_types and ioc_type not in ioc_types:
+                continue
+
             if os_family == 'Linux' and rgx_def.ioc_type == 'windows_path':
                 continue
             elif os_family == 'Windows' and rgx_def.ioc_type == 'linux_path':

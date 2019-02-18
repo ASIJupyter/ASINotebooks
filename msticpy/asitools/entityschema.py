@@ -9,23 +9,19 @@ entityschema module.
 Module for V3 Entities class
 """
 import ipaddress
+import json
 import pprint
 from abc import ABC, abstractmethod
 from enum import Enum
 
 from . utility import export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
-__all__ = ['Account', 'Alert', 'AzureResource', 'CloudApplication',
-           'DnsResolve', 'ElevationToken', 'Entity', 'Enum', 'File',
-           'GeoLocation', 'Host', 'HostLogonSession', 'IpAddress',
-           'Malware', 'NetworkConnection', 'OSFamily', 'Process',
-           'RegistryHive', 'RegistryKey', 'RegistryValue']
-
-# pylint: disable=locally-disabled, C0103
 
 
+# pylint: disable=invalid-name
 @export
 class Entity(ABC):
     """
@@ -36,7 +32,7 @@ class Entity(ABC):
 
     _entity_schema = {}
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of an entity.
 
@@ -63,6 +59,9 @@ class Entity(ABC):
             # add AdditionalData dictionary if it's populated
             if 'AdditionalData' in src_entity:
                 self['AdditionalData'] = src_entity['AdditionalData']
+        elif kwargs:
+            self._entity_properties.update(kwargs)
+
         # if we didn't populate AdditionalData, add an empty dict in case it's
         # needed
         if 'AdditionalData' not in self:
@@ -103,10 +102,8 @@ class Entity(ABC):
         """Set the value of the named property 'name'."""
         if name == '_entity_properties':
             self.__dict__[name] = value
-        elif name in self._entity_schema:
-            self._entity_properties[name] = value
         else:
-            self.__dict__[name] = value
+            self._entity_properties[name] = value
 
     def __iter__(self):
         """Iterate over entity_properties."""
@@ -120,6 +117,10 @@ class Entity(ABC):
         """Return string representation of entity."""
         return pprint.pformat(self._to_dict(self), indent=2, width=100)
 
+    def __repr__(self) -> dict:
+        """Return repr of entity."""
+        return json.dumps(self._to_dict(self), default=self._jdump_default)
+
     def _to_dict(self, entity) -> dict:
         """Return as simple nested dictionary."""
         ent_dict = {}
@@ -131,6 +132,15 @@ class Entity(ABC):
                     ent_dict[prop] = val
         ent_dict['Type'] = entity.Type
         return ent_dict
+
+    @staticmethod
+    def _jdump_default(o):
+        """
+        json.dumps default method.
+
+        Allows it to work (at least not fail) on non-serializable types.
+        """
+        return o.__dict__
 
     @property
     def Type(self) -> str:
@@ -197,7 +207,7 @@ class Entity(ABC):
 class Account(Entity):
     """Account Entity class."""
 
-    def __init__(self, src_entity=None, src_event=None, role='subject'):
+    def __init__(self, src_entity=None, src_event=None, role='subject', **kwargs):
         """
         Create a new instance of the entity type.
 
@@ -205,7 +215,7 @@ class Account(Entity):
             :param src_event: instantiate entity using properties of src event
         """
 # pylint: disable=locally-disabled, C0301
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
         if src_event is not None:
             if role == 'subject' and 'SubjectUserName' in src_event:
                 self.Name = src_event['SubjectUserName']
@@ -273,14 +283,14 @@ class Account(Entity):
 class HostLogonSession(Entity):
     """HostLogonSession Entity class."""
 
-    def __init__(self, src_entity=None, src_event=None):
+    def __init__(self, src_entity=None, src_event=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
             :param src_event: instantiate entity using properties of src event
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
         if src_event is not None:
             if 'TimeCreatedUtc' in src_event:
@@ -288,7 +298,7 @@ class HostLogonSession(Entity):
             elif 'TimeGenerated' in src_event:
                 self.StartTimeUtc = src_event['TimeGenerated']
             self.EndTimeUtc = self.StartTimeUtc
-            self.SessionId = src_event['SubjectLogonId'] if 'SubjectLogonId' in src_event else None
+            self.SessionId = src_event['TargetLogonId'] if 'TargetLogonId' in src_event else None
 
     @property
     def description_str(self) -> str:
@@ -313,13 +323,13 @@ class HostLogonSession(Entity):
 class CloudApplication(Entity):
     """CloudApplication Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -336,13 +346,13 @@ class CloudApplication(Entity):
 class DnsResolve(Entity):
     """DNS Resolve Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -366,14 +376,14 @@ class DnsResolve(Entity):
 class File(Entity):
     """File Entity class."""
 
-    def __init__(self, src_entity=None, src_event=None, role='new'):
+    def __init__(self, src_entity=None, src_event=None, role='new', **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
             :param src_event: instantiate entity using properties of src event
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
         if src_event is not None:
             if role == 'new' and 'NewProcessName' in src_event:
@@ -436,14 +446,14 @@ class File(Entity):
 class Host(Entity):
     """Host Entity class."""
 
-    def __init__(self, src_entity=None, src_event=None):
+    def __init__(self, src_entity=None, src_event=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
             :param src_event: instantiate entity using properties of src event
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
         self._computer = None
         if src_event is not None:
             if 'Computer' in src_event:
@@ -498,14 +508,14 @@ class Host(Entity):
 class IpAddress(Entity):
     """IPAddress Entity class."""
 
-    def __init__(self, src_entity=None, src_event=None):
+    def __init__(self, src_entity=None, src_event=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
             :param src_event: instantiate entity using properties of src event
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
         if src_event is not None:
             if 'IpAddress' in src_event:
@@ -539,13 +549,13 @@ class IpAddress(Entity):
 class GeoLocation(Entity):
     """GeoLocation class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -574,13 +584,13 @@ class GeoLocation(Entity):
 class Malware(Entity):
     """Malware Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -601,13 +611,13 @@ class Malware(Entity):
 class NetworkConnection(Entity):
     """NetworkConnection Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -637,14 +647,14 @@ class NetworkConnection(Entity):
 class Process(Entity):
     """Process Entity class."""
 
-    def __init__(self, src_entity=None, src_event=None, role='new'):
+    def __init__(self, src_entity=None, src_event=None, role='new', **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
             :param src_event: instantiate entity using properties of src event
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 # pylint: disable=locally-disabled, C0301
         if src_event is not None:
             if role == "new":
@@ -743,13 +753,13 @@ class RegistryHive(Enum):
 class RegistryKey(Entity):
     """RegistryKey Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -768,13 +778,13 @@ class RegistryKey(Entity):
 class RegistryValue(Entity):
     """RegistryValue Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     @property
     def description_str(self) -> str:
@@ -814,13 +824,13 @@ class ElevationToken(Enum):
 class AzureResource(Entity):
     """AzureResource Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     def description_str(self) -> str:
         """Return Entity Description."""
@@ -841,13 +851,13 @@ class AzureResource(Entity):
 class Alert(Entity):
     """Alert Entity class."""
 
-    def __init__(self, src_entity=None):
+    def __init__(self, src_entity=None, **kwargs):
         """
         Create a new instance of the entity type.
 
             :param src_entity: instantiate entity using properties of src entity
         """
-        super().__init__(src_entity=src_entity)
+        super().__init__(src_entity=src_entity, **kwargs)
 
     def description_str(self) -> str:
         """Return Entity Description."""

@@ -9,13 +9,15 @@ eventschema.
 Module for DataSchema class
 """
 from . query_defns import DataFamily, DataEnvironment
+from . utility import export
+from .. _version import VERSION
 
-__all__ = ['DataSchema']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
 # TODO Refactor to simpler data structure
+@export
 class DataSchema:
     """DataSchema class for ASI Log Analytics Queries."""
 

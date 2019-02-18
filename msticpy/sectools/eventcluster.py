@@ -13,7 +13,7 @@ process events and other similar data by grouping on common features.
 add_process_features: derives numerical features from text features such as
 commandline and process path.
 """
-from math import log10
+from math import log10, floor
 
 import numpy as np
 import pandas as pd
@@ -21,8 +21,9 @@ from sklearn.cluster import DBSCAN
 from sklearn.preprocessing import Normalizer
 
 from .. asitools.utility import export, pd_version_23
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
@@ -258,7 +259,7 @@ def add_process_features(input_frame, path_separator=None, force=False):
 
 @export
 def delim_count(input_row: pd.Series, column: str,
-                delim_list: str = r'[\s\-\\/\.,"\'|&:;%$()]'):
+                delim_list: str = r'[\s\-\\/\.,"\'|&:;%$()]') -> int:
     r"""
     Count the delimiters in input column.
 
@@ -270,17 +271,54 @@ def delim_count(input_row: pd.Series, column: str,
 
 
 @export
-def char_ord_score(input_row: pd.Series, column: str):
+def char_ord_score(input_row: pd.Series, column: str, scale: int = 1) -> int:
     """
     Return sum of ord values of characters in string.
 
-        :param input_row:pd.Series: The series to process
-        :param column:str: Column name
+    This function sums the ordinal value of each character in the
+    input string. Two strings with minor differences will result in
+    a similar score. However, for strings with highly variable content
+    (e.g. command lines or http requests containing GUIDs) this may result
+    in too much variance to be useful when you are trying to detect
+    similar patterns. You can use the scale parameter to reduce the
+    influence of features using this function on clustering and anomaly
+    algorithms.
+
+    Arguments:
+        input_row {pd.Series} -- The series to process
+        column {str} -- Column name
+        scale {int} -- reduce the scale of the feature (reducing the
+            influence of variations this feature on the )
+
+    Keyword Arguments:
+        delimiter {str} -- Delimiter used to split the column string (default: {' '})
+
+    Returns:
+        {int} -- count of tokens
+
     """
-    return sum([ord(x) for x in input_row[column]])
+    return floor(sum([ord(x) for x in input_row[column]]) / scale)
+
+
+@export
+def token_count(input_row: pd.Series, column: str, delimiter: str = ' ') -> int:
+    """
+    Return delimiter-separated tokens pd.Series column.
+
+    Arguments:
+        input_row {pd.Series} -- The series to process
+        column {str} -- Column name
+
+    Keyword Arguments:
+        delimiter {str} -- Delimiter used to split the column string (default: {' '})
+
+    Returns:
+        {int} -- count of tokens
+
+    """
+    return len(input_row[column].split(delimiter))
 
 
 def _string_score(input_str):
     """Sum the ord(c) for characters in a string."""
     return sum([ord(x) for x in input_str])
-

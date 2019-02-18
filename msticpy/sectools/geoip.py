@@ -5,7 +5,7 @@
 # license information.
 # --------------------------------------------------------------------------
 """geoip module using ipstack."""
-import gzip
+# import gzip
 from json import JSONDecodeError
 import os
 from abc import ABC, abstractmethod
@@ -18,7 +18,7 @@ from geolite2 import geolite2
 import pandas as pd
 import requests
 
-from .. asitools.entityschema import Geolocation, IpAddress
+from .. asitools.entityschema import GeoLocation, IpAddress
 from .. asitools.utility import export
 
 
@@ -28,7 +28,19 @@ class GeoIpLookup(ABC):
     @abstractmethod
     def lookup_ip(self, ip_address: str = None, ip_addr_list: Iterable = None,
                   ip_entity: IpAddress = None):
-        pass
+        """
+        Lookup IP location.
+
+        Keyword Arguments:
+            ip_address {str} -- a single address to look up (default: {None})
+            ip_addr_list {Iterable} -- a collection of addresses to lookup (default: {None})
+            ip_entity {IpAddress} -- an IpAddress entity
+
+        Returns:
+            tuple(list{dict}, list{entity}) -- returns raw geolocation results and
+                same results as IP/Geolocation entities
+
+        """
 
     def df_lookup_ip(self, data: pd.DataFrame, column: str):
         """
@@ -41,7 +53,7 @@ class GeoIpLookup(ABC):
         ip_list = data[column].values
         _, entities = self.lookup_ip(ip_addr_list=ip_list)
 
-        ip_dicts = [ent.Location.propertiescop().update(IpAddress=ent.Address)
+        ip_dicts = [ent.Location.properties().update(IpAddress=ent.Address)
                     for ent in entities]
         df_out = pd.DataFrame(data=ip_dicts)
         return data.merge(df_out, left_on=column, right_on='IpAddress')
@@ -60,10 +72,10 @@ class IPStackLookup(GeoIpLookup):
     """
 
     _IPSTACK_API = 'http://api.ipstack.com/{iplist}?access_key={access_key}'
-    
+
     def __init__(self, api_key):
         """
-        Creates a new instance of IPStackLookup.
+        Create a new instance of IPStackLookup.
 
         Arguments:
             api_key {str} -- API Key from IPStack - see https://ipstack.com
@@ -73,7 +85,7 @@ class IPStackLookup(GeoIpLookup):
     def lookup_ip(self, ip_address: str = None, ip_addr_list: Iterable = None,
                   ip_entity: IpAddress = None):
         """
-        Lookup IP location from IPStack web service
+        Lookup IP location from IPStack web service.
 
         Keyword Arguments:
             ip_address {str} -- a single address to look up (default: {None})
@@ -90,10 +102,14 @@ class IPStackLookup(GeoIpLookup):
                 same results as IP/Geolocation entities
 
         """
-        if ip_address:
-            ip_list = ip_address.strip()
+        if ip_address and isinstance(ip_address, str):
+            ip_list = [ip_address.strip()]
         elif ip_addr_list:
-            ip_list = ','.join([ip.strip() for ip in ip_addr_list])
+            ip_list = (ip.strip() for ip in ip_addr_list)
+        elif ip_entity:
+            ip_list = [ip_entity.Address]
+        else:
+            raise ValueError('No valid ip addresses were passed as arguments.')
 
         results, status = self._submit_request(ip_list)
         if status != 200:
@@ -121,7 +137,7 @@ class IPStackLookup(GeoIpLookup):
         if not ip_entity:
             ip_entity = IpAddress()
             ip_entity.Address = ip_loc['ip']
-        geo_entity = Geolocation()
+        geo_entity = GeoLocation()
         geo_entity.CountryCode = ip_loc['country_code']
 
         geo_entity.CountryName = ip_loc['country_name']
@@ -171,14 +187,9 @@ class GeoLiteLookup(GeoIpLookup):
 
     def __init__(self):
         """Return new instance of GeoLiteLookup class."""
-        if not get_ipython():
-            print(self._MM_LICENSE_TXT)
-        else:
-            display(HTML(self._MM_LICENSE_HTML))
-
         self._reader = geolite2.reader()
         last_mod_time = datetime.fromtimestamp(os.path.getmtime(geolite2.filename))
-        db_age = datetime.utcnow - last_mod_time
+        db_age = datetime.utcnow() - last_mod_time
         if db_age > timedelta(40):
             print(f'{self._DB_FILE} is over one month old. Update the maxminddb package')
             print(f'to refresh or download a new version from {self._MAXMIND_DOWNLOAD}')
@@ -186,7 +197,7 @@ class GeoLiteLookup(GeoIpLookup):
     def lookup_ip(self, ip_address: str = None, ip_addr_list: Iterable = None,
                   ip_entity: IpAddress = None):
         """
-        Lookup IP location from IPStack web service
+        Lookup IP location from IPStack web service.
 
         Keyword Arguments:
             ip_address {str} -- a single address to look up (default: {None})
@@ -197,47 +208,39 @@ class GeoLiteLookup(GeoIpLookup):
                 same results as IP/Geolocation entities
 
         """
-        ip_list = None
-        if ip_address:
-            ip_list = list(ip_address.strip())
+        if ip_address and isinstance(ip_address, str):
+            ip_list = [ip_address.strip()]
         elif ip_addr_list:
             ip_list = (ip.strip() for ip in ip_addr_list)
         elif ip_entity:
-            ip_list = list(ip_entity.Address)
+            ip_list = [ip_entity.Address]
+        else:
+            raise ValueError('No valid ip addresses were passed as arguments.')
 
         output_raw = []
         output_entities = []
         for ip_input in ip_list:
             geo_match = self._reader.get(ip_input)
             if geo_match:
-                geo_result = self._format_result(ip_input, geo_match)
-                output_raw.append(geo_result)
-                output_entities.append(self._create_ip_entity(ip_input, geo_result, ip_entity))
+                output_raw.append(geo_match)
+                output_entities.append(self._create_ip_entity(ip_input, geo_match, ip_entity))
 
         return output_raw, output_entities
 
-    def _format_result(self, ip_address, geo_match):
-        return {
-            'City': geo_match.get('city', {}).get('names', {}).get('en', 'Unknown'),
-            'Country': geo_match.get('country', {}).get('names', {}).get('en', 'Unknown'),
-            'Country Code': geo_match.get('country', {}).get('iso_code', 'Unknown'),
-            'Region': geo_match.get('subdivisions', {})[0].get('names', {}).get('en', 'Unknown'),
-            'Latitude': geo_match.get('location', {}).get('latitude', 'Unknown'),
-            'Longitude': geo_match.get('location', {}).get('longitude', 'Unknown'),
-            'IP': ip_address
-        }
-
-    def _create_ip_entity(self, ip_address, ip_loc: dict, ip_entity):
+    def _create_ip_entity(self, ip_address, geo_match: dict, ip_entity):
         if not ip_entity:
             ip_entity = IpAddress()
             ip_entity.Address = ip_address
-        geo_entity = Geolocation()
-        geo_entity.CountryCode = ip_loc['Country Code']
-        geo_entity.CountryName = ip_loc['Country']
-        geo_entity.State = ip_loc['Region']
-        geo_entity.City = ip_loc['City']
-        geo_entity.Longitude = ip_loc['Longitude']
-        geo_entity.Latitude = ip_loc['Latitude']
+        geo_entity = GeoLocation()
+        geo_entity.CountryCode = geo_match.get('country', {}).get('iso_code', None)
+        geo_entity.CountryName = geo_match.get('country', {}).get('names', {}).get('en', None)
+        subdivs = geo_match.get('subdivisions', [])
+        if subdivs:
+            geo_entity.State = subdivs[0].get('names', {}).get('en', None)
+        geo_entity.City = geo_match.get('city', {}).get('names', {}).get('en', None)
+        geo_entity.Longitude = geo_match.get('location', {}).get('longitude', None)
+        geo_entity.Latitude = geo_match.get('location', {}).get('latitude', None)
+        ip_entity.Location = geo_entity
         return ip_entity
 
 

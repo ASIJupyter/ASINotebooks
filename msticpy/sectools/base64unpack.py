@@ -37,8 +37,9 @@ from collections import namedtuple
 import pandas as pd
 
 from .. asitools.utility import pd_version_23, export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 _RESULT_FIELDS = ['reference', 'original_string', 'file_name', 'file_type',
@@ -149,7 +150,7 @@ def unpack_items(input_string=None, data=None, column=None, trace=False):
                 output_df = output_frame
             else:
                 if pd_version_23():
-                    output_df = output_df.append(output_frame, ignore_index=True, 
+                    output_df = output_df.append(output_frame, ignore_index=True,
                                                  sort=False)
                 else:
                     output_df = output_df.append(output_frame, ignore_index=True)
@@ -295,11 +296,11 @@ def _decode_b64_string_recursive(input_string, undecodable_strings=None,
 
                         if pd_version_23():
                             binary_records = binary_records.append(new_row,
-                                                                ignore_index=True,
-                                                                sort=False)
+                                                                   ignore_index=True,
+                                                                   sort=False)
                         else:
                             binary_records = binary_records.append(new_row,
-                                                                ignore_index=True)
+                                                                   ignore_index=True)
 
                 # replace the decoded fragment in our current results string (decode_string)
                 decoded_string = decoded_string.replace(b64match.groupdict()['b64'],

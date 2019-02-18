@@ -7,19 +7,20 @@
 
 import matplotlib.pyplot as plt
 import networkx as nx
-
+import numpy as np
 import pandas as pd
 from bokeh.io import output_notebook, show
-from bokeh.models import (ColumnDataSource, DatetimeTickFormatter,
-                          HoverTool, Label)
+from bokeh.models import (ColumnDataSource, DatetimeTickFormatter, HoverTool,
+                          Label)
 from bokeh.plotting import figure, reset_output
 from IPython.core.display import HTML, display
 from IPython.display import Javascript
 
 from .security_alert import SecurityAlert
 from .utility import export
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
@@ -125,7 +126,7 @@ def exec_remaining_cells():
 
 @export
 def draw_alert_entity_graph(nx_graph: nx.Graph, font_size: int = 12,
-                            height: int = 15, width: int = 20,
+                            height: int = 15, width: int = 15,
                             margin: float = 0.3, scale: int = 1):
     """
     "Draw networkX graph with matplotlib.
@@ -170,19 +171,28 @@ def draw_alert_entity_graph(nx_graph: nx.Graph, font_size: int = 12,
 @export
 def display_timeline(data, alert=None, overlay_data=None, title: str = None,
                      time_column: str = 'TimeGenerated',
-                     source_columns: list = None):
+                     source_columns: list = None,
+                     overlay_colums: list = None,
+                     height: int = 300):
     """
     Display a timeline of events.
 
     Arguments:
-        :param data: Input DataFrame
-        :param alert=None: Input alert (optional)
-        :param overlay_data=None: Second event stream (DataFrame)
-            to display as overlay
-        :param time_column='TimeGenerated': The name of the time
-            property used in the Dataframe(s)
-        :param source_columns=None: List of source columns to use in
-            tooltips
+        data {pd.DataFrame} -- Input DataFrame
+
+    Keyword Arguments:
+        alert {SecurityAlert} -- Input alert (optional) (default: {None})
+        overlay_data {pd.DataFrame} -- Second event stream (DataFrame)
+            to display as overlay (default: {None})
+        title {str} -- [description] (default: {None})
+        time_column {str} -- The name of the time
+            property used in the Dataframe(s) (default: {'TimeGenerated'})
+        source_columns {list} -- List of source columns to use in
+            tooltips (default: {None})
+        overlay_colums {list} -- List of source columns to use in
+            overlay data tooltips (default: {None})
+        heigh {int} -- the height of the plot figure (under 300 limits access
+            to Bokeh tools)
     """
     reset_output()
     output_notebook()
@@ -209,7 +219,8 @@ def display_timeline(data, alert=None, overlay_data=None, title: str = None,
     # if we have an overlay - add this data and shift the y co-ordinates to
     # show on two separate lines
     if overlay_data is not None:
-        overlay_colums = source_columns
+        overlay_colums = (overlay_colums if overlay_colums is not None
+                          else source_columns)
         if time_column not in overlay_colums:
             overlay_colums.append(time_column)
         if 'CommandLine' in overlay_colums:
@@ -242,12 +253,12 @@ def display_timeline(data, alert=None, overlay_data=None, title: str = None,
     )
 
     if not title:
-        title = 'Event Timeline (hover over item to see details)'
+        title = 'Event Timeline'
     else:
-        title = '{} Timeline (hover over item to see details)'.format(title)
+        title = 'Timeline {}'.format(title)
 
     # tools = 'pan, box_zoom, wheel_zoom, reset, undo, redo, save, hover'
-    plot = figure(min_border_left=50, plot_height=300, plot_width=1000,
+    plot = figure(min_border_left=50, plot_height=height, plot_width=900,
                   x_axis_label='Event Time', x_axis_type='datetime', x_minor_ticks=10,
                   tools=[hover, 'pan', 'xwheel_zoom', 'box_zoom', 'reset'],
                   title=title)
@@ -256,7 +267,7 @@ def display_timeline(data, alert=None, overlay_data=None, title: str = None,
     # Tick formatting for different zoom levels
     # '%H:%M:%S.%3Nms
     tick_format = DatetimeTickFormatter()
-    tick_format.days = ['%d %H:%M']
+    tick_format.days = ['%m-%d %H:%M']
     tick_format.hours = ['%H:%M:%S']
     tick_format.minutes = ['%H:%M:%S']
     tick_format.seconds = ['%H:%M:%S']
@@ -318,7 +329,8 @@ def _wrap_text(source_string, wrap_len):
 
 
 # Constants for Windows logon
-_WIN_LOGON_TYPE_MAP = {2: 'Interactive', 3: 'Network', 4: 'Batch', 5: 'Service',
+_WIN_LOGON_TYPE_MAP = {0: 'Unknown',
+                       2: 'Interactive', 3: 'Network', 4: 'Batch', 5: 'Service',
                        7: 'Unlock', 8: 'NetworkCleartext', 9: 'NewCredentials',
                        10: 'RemoteInteractive', 11: 'CachedInteractive'}
 _WINDOWS_SID = {'S-1-0-0': 'Null SID', 'S-1-5-18': 'LOCAL_SYSTEM',
@@ -351,7 +363,10 @@ def display_logon_data(logon_event: pd.DataFrame, alert: SecurityAlert = None,
 
         if os_family == 'Windows':
             logon_type = logon_row['LogonType']
-            print(f'Logon type: {logon_type} ({_WIN_LOGON_TYPE_MAP[logon_type]})')
+            logon_desc_idx = logon_type
+            if logon_type not in _WIN_LOGON_TYPE_MAP:
+                logon_desc_idx = 0
+            print(f'Logon type: {logon_type} ({_WIN_LOGON_TYPE_MAP[logon_desc_idx]})')
 
         account_id = logon_row.TargetUserSid
         print('User Id/SID: ', account_id)
@@ -378,6 +393,7 @@ def display_logon_data(logon_event: pd.DataFrame, alert: SecurityAlert = None,
         print('Source IpAddress: ', logon_row['IpAddress'])
         print('Source Host: ', logon_row['WorkstationName'])
         print('Logon status: ', logon_row['Status'])
+        print()
 
 
 def _print_sid_info(sid):
@@ -389,3 +405,96 @@ def _print_sid_info(sid):
         print('    SID {} is guest'.format(sid))
     if sid.startswith(_DOM_OR_MACHINE_SID):
         print('    SID {} is local machine or domain account'.format(sid))
+
+
+@export
+def plot_cluster(db_cluster, data, X, plot_label=None, plot_features=[0, 1], verbose=False, 
+                 cut_off=3, xlabel=None, ylabel=None):
+    """
+    [summary]
+
+    Arguments:
+        db_cluster {[type]} -- DBScan Cluster (from SkLearn DBSCAN)
+        data {[type]} -- Dataframe containing original data
+        X {[type]} -- The DBSCAN predict numpy array
+
+    Keyword Arguments:
+        plot_label {str} -- If set the column to use to label data points
+            (default: {None})
+        plot_features {list} -- [description] Which two features in X to plot
+        verbose {bool} -- Verbose execution with some extra info (default: {False})
+        cut_off {int} -- The cluster size below which items are considered
+            outliers (default: {3})
+        xlabel {[type]} -- x-axis label (default: {None})
+        ylabel {[type]} -- y-axis label (default: {None})
+    """
+    if plot_features[0] >= X.shape[1]:
+        raise ValueError("plot_features[0] index must be a value from 0 to {}."
+                         .format(X.shape[1] - 1))
+    if plot_features[1] >= X.shape[1]:
+        raise ValueError("plot_features[1] index must be a value from 0 to {}."
+                         .format(X.shape[1] - 1))
+    if plot_features[0] == plot_features[1]:
+        raise ValueError("plot_features indexes must be 2 different values in range 0 to {}."
+                         .format(X.shape[1] - 1))
+
+    labels = db_cluster.labels_
+    core_samples_mask = np.zeros_like(labels, dtype=bool)
+    core_samples_mask[db_cluster.core_sample_indices_] = True
+    unique_labels = set(labels)
+    colors = [plt.cm.Spectral(each)
+              for each in np.linspace(0, 1, len(unique_labels))]
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+    n_noise_ = list(labels).count(-1)
+    _, counts = np.unique(labels, return_counts=True)
+
+    if verbose:
+        print('Estimated number of clusters: %d' % n_clusters_)
+        print('Estimated number of noise points: %d' % n_noise_)
+        # print("Silhouette Coefficient: %0.3f"
+        #       % metrics.silhouette_score(X, labels))
+
+    if not isinstance(data, pd.DataFrame):
+        plot_label = None
+    elif plot_label is not None and plot_label not in data:
+        plot_label = None
+
+    p_label = None
+    for cluster_id, color in zip(unique_labels, colors):
+        if cluster_id == -1:
+            # Black used for noise.
+            color = [0, 0, 0, 1]
+        class_member_mask = (labels == cluster_id)
+
+        cluster_size = counts[cluster_id]
+        marker_size = cluster_size
+        marker = 'o'
+        font_size = 'small'
+        alpha = 0.4
+
+        if cluster_size < cut_off:
+            marker = '+'
+            marker_size = 10
+            font_size = 'large'
+            alpha = 1.0
+        first_row = data[class_member_mask].iloc[0]
+        xy = X[class_member_mask & core_samples_mask]
+        plt.plot(xy[:, plot_features[0]], xy[:, plot_features[1]], marker,
+                 markerfacecolor=tuple(color),
+                 markersize=marker_size)
+
+        if plot_label:
+            if len(first_row) > 0 and plot_label in first_row:
+                p_label = first_row[plot_label]
+                try:
+                    plt.annotate(s=p_label, xy=(xy[0, plot_features[0]], xy[0, plot_features[1]]),
+                                 fontsize=font_size, alpha=alpha)
+                except IndexError:
+                    pass
+
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title('Estimated number of clusters: %d' % n_clusters_)
+    plt.show()
+    return plt

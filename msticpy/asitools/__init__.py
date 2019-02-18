@@ -19,4 +19,5 @@ from . query_mgr import *
 from . import query_builtin_queries as qrydef
 from . import nbdisplay as disp
 
+
 # pylint: enable=W0401

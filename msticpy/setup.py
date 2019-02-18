@@ -5,14 +5,19 @@
 # --------------------------------------------------------------------------
 """Setup script for msticpy."""
 
+import re
+
 import setuptools
 
-from ._version import VERSION as __version__
+# from ._version import VERSION as __version__
 
 # pylint: disable=locally-disabled, C0103
-with open("README.md", "r") as fh:
+with open("Readme.md", "r") as fh:
     long_description = fh.read()
 # pylint: enable=locally-disabled, C0103
+
+with open("_version.py", "r") as fd:
+    __version__ = re.search(r'^VERSION\s*=\s*[\'"]([^\'"]*)[\'"]', fd.read(), re.MULTILINE).group(1)
 
 setuptools.setup(
     name="msticpy",
@@ -24,7 +29,9 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://https://github.com/ianhelle/msyticpy",
     python_requires='>=3.6',
-    packages=setuptools.find_packages(exclude=['notebookext', 'notebooks', 'miscnotebooks']),
+    packages=setuptools.find_packages(exclude=['notebookext', 'notebooks',
+                                               'miscnotebooks', 'doc',
+                                               'tests']),
     classifiers=[
         "Programming Language :: Python :: 3.6",
         "License :: OSI Approved :: MIT License",

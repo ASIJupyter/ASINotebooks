@@ -8,12 +8,14 @@ import pandas as pd
 
 from . entityschema import Host, Process, Account, IpAddress
 from . security_base import SecurityBase
+from . utility import export
+from .. _version import VERSION
 
-__all__ = ['SecurityEvent']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
+@export
 class SecurityEvent(SecurityBase):
     """SecurityEvent class."""
 
@@ -57,12 +59,12 @@ class SecurityEvent(SecurityBase):
 
     def _extract_entities(self, src_row):
         if 'EventID' in src_row:
-            self._entities.append(Host(src_row))
+            self._entities.append(Host(src_event=src_row))
             event_id = str(src_row['EventID'])
             if event_id == '4688':
                 self._entities.append(Process(src_row, role='new'))
 
             if event_id == '4624' or event_id == '4625':
-                self._entities.append(Account(src_row, role='subject'))
-                self._entities.append(Account(src_row, role='target'))
-                self._entities.append(IpAddress(src_row))
+                self._entities.append(Account(src_event=src_row, role='subject'))
+                self._entities.append(Account(src_event=src_row, role='target'))
+                self._entities.append(IpAddress(src_event=src_row))

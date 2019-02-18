@@ -14,9 +14,10 @@ import pandas as pd
 from .entityschema import Process
 from .query_defns import QueryParamProvider, DataFamily, DataEnvironment
 from .utility import is_not_empty, escape_windows_path
+from . utility import export
+from .. _version import VERSION
 
-__all__ = ['SecurityBase']
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 _ID_PROPERTIES = ['AzSubscriptionId', 'AzResourceId', 'WorkspaceId', 'AgentId',
@@ -25,6 +26,7 @@ _ID_PROPERTIES = ['AzSubscriptionId', 'AzResourceId', 'WorkspaceId', 'AgentId',
                   'ProviderAlertId', 'SystemAlertId', 'ResourceId']
 
 
+@export
 class SecurityBase(QueryParamProvider):
     """
     Security Base Class for alerts and events.
@@ -306,11 +308,13 @@ class SecurityBase(QueryParamProvider):
             :param operator='==': the operator to use in the filter clause.
                 '==' and '!=' typically.
         """
-        if self.is_in_log_analytics and 'SourceComputerId' in self._ids:
+        if (self.is_in_log_analytics and 'SourceComputerId' in self._ids and
+                self._ids['SourceComputerId']):
             return 'SourceComputerId {} \'{}\''.format(operator, self._ids['SourceComputerId'])
-        if self.is_in_azure_sub and 'AzureResourceId' in self._ids:
+        if (self.is_in_azure_sub and 'AzureResourceId' in self._ids and
+                self._ids['AzResourceId']):
             return 'AzureResourceId {} \'{}\''.format(operator, self._ids['AzResourceId'])
-        if self.is_in_workspace and 'AgendId' in self._ids:
+        if self.is_in_workspace and 'AgendId' in self._ids and self._ids['AgentId']:
             return 'AgentId {} \'{}\''.format(operator, self._ids['AgentId'])
 
         if self.primary_host:

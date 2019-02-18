@@ -14,8 +14,9 @@ import pandas as pd
 from . security_alert import SecurityAlert
 from . entityschema import Entity
 from . utility import export, is_not_empty
+from .. _version import VERSION
 
-__version__ = '0.1'
+__version__ = VERSION
 __author__ = 'Ian Hellen'
 
 
@@ -150,10 +151,8 @@ def _add_related_alert_edge(nx_graph, source, target):
         current_count = 0
     current_count += 1
 
-    displayname = nx.get_node_attributes(nx_graph, 'displayname')[target_node]
-    description = 'Related alert: {}  Count:{}\n{}'.format(target['AlertType'],
-                                                           current_count,
-                                                           displayname)
+    description = 'Related alert: {}  Count:{}'.format(target['AlertType'],
+                                                       current_count)
     node_attrs = {target_node: {'count': current_count, 'description': description}}
     nx.set_node_attributes(nx_graph, node_attrs)
     nx_graph.add_edge(source, target_node, weight=0.7, description='Related Alert')
