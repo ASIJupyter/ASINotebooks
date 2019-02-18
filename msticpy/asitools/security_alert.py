@@ -35,7 +35,7 @@ class SecurityAlert(SecurityBase):
         if 'Entities' in src_row:
             self._src_entities = dict()
             self._extract_entities(src_row)
-
+            
         if 'ExtendedProperties' in src_row:
             if isinstance(src_row.ExtendedProperties, dict):
                 self.extended_properties = src_row.ExtendedProperties
@@ -87,7 +87,7 @@ class SecurityAlert(SecurityBase):
             str_rep = [f'ExtProp: {prop}: {val}' for prop, val in
                        self.extended_properties.items()]
             alert_props = alert_props + '\n' + '\n'.join(str_rep)
-
+        
         return alert_props
 
     # Private methods

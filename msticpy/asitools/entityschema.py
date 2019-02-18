@@ -119,6 +119,10 @@ class Entity(ABC):
 
     def __repr__(self) -> dict:
         """Return repr of entity."""
+        return json.dumps(self._to_dict(self))
+
+    def __repr__(self) -> dict:
+        """Return repr of entity."""
         return json.dumps(self._to_dict(self), default=self._jdump_default)
 
     def _to_dict(self, entity) -> dict:

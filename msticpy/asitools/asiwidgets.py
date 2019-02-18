@@ -638,6 +638,9 @@ class SelectString(object):
             self.value = value
 
         if self.item_action is not None:
+               self.item_action(self._select_item)
+
+        if self.item_action is not None:
             self.item_action(self.value)
 
     def display(self):
